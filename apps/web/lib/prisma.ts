@@ -5,13 +5,22 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
+function createPrismaClient() {
+  const databaseUrl = process.env.DATABASE_URL;
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  const adapter = new PrismaMariaDb(databaseUrl);
+
+  return new PrismaClient({
     adapter,
   });
+}
+
+export const prisma =
+  globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
