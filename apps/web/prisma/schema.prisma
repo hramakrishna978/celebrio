@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model consultations {
+  id                Int                              @id @default(autoincrement())
+  customer_id       Int
+  event_id          Int?
+  consultation_date DateTime                         @db.DateTime(0)
+  consultation_type consultations_consultation_type? @default(ONLINE)
+  notes             String?                          @db.Text
+  status            consultations_status?            @default(REQUESTED)
+  created_at        DateTime?                        @default(now()) @db.Timestamp(0)
+  updated_at        DateTime?                        @default(now()) @db.Timestamp(0)
+  customers         customers                        @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_consultation_customer")
+  events            events?                          @relation(fields: [event_id], references: [id], onUpdate: NoAction, map: "fk_consultation_event")
+
+  @@index([customer_id], map: "fk_consultation_customer")
+  @@index([event_id], map: "fk_consultation_event")
+}
+
+model contracts {
+  id               Int               @id @default(autoincrement())
+  event_id         Int
+  customer_id      Int
+  contract_number  String            @unique(map: "contract_number") @db.VarChar(100)
+  contract_content String?           @db.LongText
+  status           contracts_status? @default(DRAFT)
+  signed_at        DateTime?         @db.DateTime(0)
+  created_at       DateTime?         @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(0)
+  customers        customers         @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_contract_customer")
+  events           events            @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_contract_event")
+
+  @@index([customer_id], map: "fk_contract_customer")
+  @@index([event_id], map: "fk_contract_event")
+}
+
+model customers {
+  id            Int             @id @default(autoincrement())
+  user_id       Int?
+  name          String          @db.VarChar(150)
+  email         String          @db.VarChar(150)
+  phone         String?         @db.VarChar(30)
+  city          String?         @db.VarChar(100)
+  created_at    DateTime?       @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?       @default(now()) @db.Timestamp(0)
+  consultations consultations[]
+  contracts     contracts[]
+  users         users?          @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_customer_user")
+  events        events[]
+  payments      payments[]
+
+  @@index([user_id], map: "fk_customer_user")
+}
+
+model event_services {
+  id           Int                    @id @default(autoincrement())
+  event_id     Int
+  service_id   Int
+  agreed_price Decimal?               @db.Decimal(15, 2)
+  status       event_services_status? @default(REQUESTED)
+  created_at   DateTime?              @default(now()) @db.Timestamp(0)
+  events       events                 @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_services_event")
+  services     services               @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_services_service")
+
+  @@index([event_id], map: "fk_event_services_event")
+  @@index([service_id], map: "fk_event_services_service")
+}
+
+model event_vendors {
+  id           Int                   @id @default(autoincrement())
+  event_id     Int
+  vendor_id    Int
+  agreed_price Decimal?              @db.Decimal(15, 2)
+  status       event_vendors_status? @default(SHORTLISTED)
+  created_at   DateTime?             @default(now()) @db.Timestamp(0)
+  events       events                @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_vendor_event")
+  vendors      vendors               @relation(fields: [vendor_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_vendor_vendor")
+
+  @@index([event_id], map: "fk_event_vendor_event")
+  @@index([vendor_id], map: "fk_event_vendor_vendor")
+}
+
+model events {
+  id             Int              @id @default(autoincrement())
+  customer_id    Int
+  event_name     String           @db.VarChar(200)
+  event_type     String           @db.VarChar(100)
+  event_date     DateTime?        @db.Date
+  guest_count    Int?
+  venue_name     String?          @db.VarChar(200)
+  city           String?          @db.VarChar(100)
+  budget         Decimal?         @db.Decimal(15, 2)
+  status         events_status?   @default(ENQUIRY)
+  created_at     DateTime?        @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(0)
+  consultations  consultations[]
+  contracts      contracts[]
+  event_services event_services[]
+  event_vendors  event_vendors[]
+  customers      customers        @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_customer")
+  payments       payments[]
+  tasks          tasks[]
+
+  @@index([customer_id], map: "fk_event_customer")
+}
+
+model notifications {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  title      String    @db.VarChar(200)
+  message    String    @db.Text
+  is_read    Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notification_user")
+
+  @@index([user_id], map: "fk_notification_user")
+}
+
+model payments {
+  id                    Int              @id @default(autoincrement())
+  event_id              Int
+  customer_id           Int
+  amount                Decimal          @db.Decimal(15, 2)
+  currency              String?          @default("INR") @db.VarChar(10)
+  payment_method        String?          @db.VarChar(50)
+  transaction_reference String?          @db.VarChar(200)
+  status                payments_status? @default(PENDING)
+  paid_at               DateTime?        @db.DateTime(0)
+  created_at            DateTime?        @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?        @default(now()) @db.Timestamp(0)
+  customers             customers        @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_customer")
+  events                events           @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_event")
+
+  @@index([customer_id], map: "fk_payment_customer")
+  @@index([event_id], map: "fk_payment_event")
+}
+
+model services {
+  id             Int              @id @default(autoincrement())
+  name           String           @db.VarChar(150)
+  description    String?          @db.Text
+  base_price     Decimal?         @db.Decimal(15, 2)
+  is_active      Boolean?         @default(true)
+  created_at     DateTime?        @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(0)
+  event_services event_services[]
+}
+
+model tasks {
+  id          Int             @id @default(autoincrement())
+  event_id    Int
+  title       String          @db.VarChar(200)
+  description String?         @db.Text
+  due_date    DateTime?       @db.Date
+  status      tasks_status?   @default(TODO)
+  priority    tasks_priority? @default(MEDIUM)
+  created_at  DateTime?       @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?       @default(now()) @db.Timestamp(0)
+  events      events          @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_task_event")
+
+  @@index([event_id], map: "fk_task_event")
+}
+
+model users {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(100)
+  email         String          @unique(map: "email") @db.VarChar(150)
+  password_hash String          @db.VarChar(255)
+  role          users_role      @default(CUSTOMER)
+  is_active     Boolean         @default(true)
+  created_at    DateTime?       @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?       @default(now()) @db.Timestamp(0)
+  customers     customers[]
+  notifications notifications[]
+}
+
+model vendors {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(200)
+  category      String          @db.VarChar(100)
+  email         String?         @db.VarChar(150)
+  phone         String?         @db.VarChar(30)
+  city          String?         @db.VarChar(100)
+  address       String?         @db.Text
+  description   String?         @db.Text
+  is_active     Boolean?        @default(true)
+  created_at    DateTime?       @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?       @default(now()) @db.Timestamp(0)
+  event_vendors event_vendors[]
+}
+
+enum consultations_consultation_type {
+  ONLINE
+  PHONE
+  IN_PERSON
+}
+
+enum event_services_status {
+  REQUESTED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum event_vendors_status {
+  SHORTLISTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum users_role {
+  ADMIN
+  CUSTOMER
+  STAFF
+}
+
+enum contracts_status {
+  DRAFT
+  SENT
+  SIGNED
+  CANCELLED
+}
+
+enum tasks_status {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum consultations_status {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum tasks_priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum payments_status {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum events_status {
+  ENQUIRY
+  PLANNING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
