@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const redirectTo =
       user.role === "ADMIN"
         ? "/admin"
-        : "/";
+        : "/portal";
 
     // Create response
     const response = NextResponse.json(

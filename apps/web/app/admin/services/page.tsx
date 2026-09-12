@@ -1,28 +1,3 @@
-export default function ServicesPage() {
-  return (
-    <div>
-      <p className="text-sm font-medium text-violet-600">
-        CELEBRIO ADMIN
-      </p>
-
-      <h1 className="mt-2 text-3xl font-bold text-slate-950">
-        Services
-      </h1>
-
-      <p className="mt-2 text-slate-500">
-        Manage the wedding services offered by Celebrio.
-      </p>
-
-      <div className="mt-8 rounded-xl border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">
-          Service Catalogue
-        </h2>
-
-        <p className="mt-2 text-sm text-slate-500">
-          Photography, decoration, catering, venues, entertainment
-          and other services will be managed here.
-        </p>
-      </div>
-    </div>
-  );
-}
+import { BriefcaseBusiness } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+export default async function ServicesPage() { const services = await prisma.services.findMany({ take: 60, orderBy: { name: "asc" }, include: { event_services: true } }); return <div className="mx-auto max-w-7xl"><p className="text-sm font-semibold uppercase tracking-wider text-violet-600">Celebrio admin</p><h1 className="mt-2 text-3xl font-bold">Service catalogue</h1><p className="mt-2 text-slate-500">The packages and planning services your team can attach to client events.</p><div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{services.map((service) => <article key={service.id} className="rounded-2xl border bg-white p-5"><BriefcaseBusiness className="text-violet-600" /><h2 className="mt-4 font-bold">{service.name}</h2><p className="mt-2 min-h-10 text-sm text-slate-500">{service.description || "Customisable Celebrio service."}</p><div className="mt-4 flex items-center justify-between border-t pt-3 text-sm"><span className="font-bold">{service.base_price ? `₹${Number(service.base_price).toLocaleString("en-IN")}` : "Custom quote"}</span><span className="text-slate-500">{service.event_services.length} events</span></div></article>)}{!services.length && <p className="rounded-2xl border bg-white p-12 text-center text-slate-500 md:col-span-2 xl:col-span-3">No services in the catalogue yet.</p>}</div></div>; }

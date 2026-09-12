@@ -1,147 +1,19 @@
-export default function AdminPage() {
-  return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-7xl px-6 py-12">
-        <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-          CELEBRIO ADMIN
-        </p>
+import Link from "next/link";
+import { CalendarDays, CreditCard, Users, Video } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950">
-          Admin Dashboard
-        </h1>
-
-        <p className="mt-3 max-w-2xl text-slate-500">
-          Manage customers, events, consultations, services, vendors,
-          contracts, payments, tasks and reports from one place.
-        </p>
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">
-              Customers
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-slate-950">
-              0
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">
-              Events
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-slate-950">
-              0
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">
-              Consultations
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-slate-950">
-              0
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">
-              Pending Payments
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-slate-950">
-              0
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <AdminLink
-            title="Customers"
-            description="Manage customer enquiries and wedding clients."
-            href="/admin/customers"
-          />
-
-          <AdminLink
-            title="Events"
-            description="Manage weddings and other customer events."
-            href="/admin/events"
-          />
-
-          <AdminLink
-            title="Consultations"
-            description="Manage consultation requests and schedules."
-            href="/admin/consultations"
-          />
-
-          <AdminLink
-            title="Services"
-            description="Manage Celebrio services and pricing."
-            href="/admin/services"
-          />
-
-          <AdminLink
-            title="Vendors"
-            description="Manage vendors and vendor assignments."
-            href="/admin/vendors"
-          />
-
-          <AdminLink
-            title="Contracts"
-            description="Manage customer contracts and agreements."
-            href="/admin/contracts"
-          />
-
-          <AdminLink
-            title="Payments"
-            description="Track payments, invoices and outstanding amounts."
-            href="/admin/payments"
-          />
-
-          <AdminLink
-            title="Tasks"
-            description="Manage event planning tasks and deadlines."
-            href="/admin/tasks"
-          />
-
-          <AdminLink
-            title="Reports"
-            description="View business, event and financial reports."
-            href="/admin/reports"
-          />
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function AdminLink({
-  title,
-  description,
-  href,
-}: {
-  title: string;
-  description: string;
-  href: string;
-}) {
-  return (
-    <a
-      href={href}
-      className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-violet-200 hover:shadow-md"
-    >
-      <h2 className="text-xl font-semibold text-slate-950 group-hover:text-violet-700">
-        {title}
-      </h2>
-
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        {description}
-      </p>
-
-      <p className="mt-5 text-sm font-semibold text-violet-700">
-        Open →
-      </p>
-    </a>
-  );
+export default async function AdminPage() {
+  const [customers, events, consultations, payments, recentEvents, taskCounts] = await Promise.all([
+    prisma.customers.count(), prisma.events.count(), prisma.consultations.count(),
+    prisma.payments.aggregate({ _sum: { amount: true }, where: { status: "SUCCESS" } }),
+    prisma.events.findMany({ take: 6, orderBy: { created_at: "desc" }, include: { customers: { select: { name: true } }, tasks: { select: { status: true } } } }),
+    prisma.tasks.groupBy({ by: ["status"], _count: { _all: true } }),
+  ]);
+  const completed = taskCounts.find((item) => item.status === "COMPLETED")?._count._all || 0;
+  const totalTasks = taskCounts.reduce((total, item) => total + item._count._all, 0);
+  const stats = [
+    ["Customers", customers, "Client accounts and enquiries", Users, "/admin/customers"], ["Events", events, "All active and upcoming events", CalendarDays, "/admin/events"],
+    ["Consultations", consultations, "Meetings requiring coordination", Video, "/admin/consultations"], ["Collected revenue", `₹${Number(payments._sum.amount || 0).toLocaleString("en-IN")}`, "Successful payments", CreditCard, "/admin/payments"],
+  ] as const;
+  return <div className="mx-auto max-w-7xl space-y-7"><div><p className="text-sm font-semibold uppercase tracking-wider text-violet-600">Celebrio admin</p><h1 className="mt-2 text-4xl font-bold tracking-tight">Operations dashboard</h1><p className="mt-2 text-slate-500">A live view of enquiries, events, consultations and financial progress.</p></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map(([label, value, detail, Icon, href]) => <Link key={label} href={href} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300"><Icon className="text-violet-600" size={22} /><p className="mt-4 text-sm font-medium text-slate-500">{label}</p><p className="mt-1 text-3xl font-bold">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></Link>)}</div><div className="grid gap-6 xl:grid-cols-3"><section className="rounded-2xl border bg-white p-6 xl:col-span-2"><div className="flex items-center justify-between"><div><h2 className="text-lg font-bold">Recent event pipeline</h2><p className="text-sm text-slate-500">Select an event to manage its details.</p></div><Link href="/admin/events" className="text-sm font-bold text-violet-700">View all →</Link></div><div className="mt-5 space-y-3">{recentEvents.length ? recentEvents.map((event) => <Link key={event.id} href="/admin/events" className="flex items-center justify-between rounded-xl bg-slate-50 p-4 transition hover:bg-violet-50"><div><p className="font-semibold">{event.event_name}</p><p className="text-sm text-slate-500">{event.customers.name} · {event.event_type} · {event.event_date?.toLocaleDateString()}</p></div><span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">{event.status}</span></Link>) : <p className="py-10 text-center text-sm text-slate-500">No events yet. Submit an enquiry or run the demo seed locally.</p>}</div></section><section className="rounded-2xl border bg-white p-6"><h2 className="text-lg font-bold">Planning delivery</h2><p className="mt-1 text-sm text-slate-500">Tasks completed across all events</p><p className="mt-8 text-4xl font-bold">{completed}<span className="text-lg text-slate-400"> / {totalTasks}</span></p><div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100"><div className="h-full bg-emerald-500" style={{ width: `${totalTasks ? Math.round((completed / totalTasks) * 100) : 0}%` }} /></div><Link href="/admin/reports" className="mt-6 inline-block text-sm font-bold text-violet-700">Open reporting →</Link></section></div></div>;
 }

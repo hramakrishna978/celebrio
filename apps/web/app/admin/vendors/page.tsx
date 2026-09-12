@@ -1,28 +1,3 @@
-export default function VendorsPage() {
-  return (
-    <div>
-      <p className="text-sm font-medium text-violet-600">
-        CELEBRIO ADMIN
-      </p>
-
-      <h1 className="mt-2 text-3xl font-bold text-slate-950">
-        Vendors
-      </h1>
-
-      <p className="mt-2 text-slate-500">
-        Manage vendors, suppliers and event service providers.
-      </p>
-
-      <div className="mt-8 rounded-xl border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">
-          Vendor Management
-        </h2>
-
-        <p className="mt-2 text-sm text-slate-500">
-          Vendor profiles, categories, contact details and assignments
-          will appear here.
-        </p>
-      </div>
-    </div>
-  );
-}
+import { Building2, MapPin, Phone } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+export default async function VendorsPage() { const vendors = await prisma.vendors.findMany({ take: 60, orderBy: { name: "asc" }, include: { event_vendors: true } }); return <div className="mx-auto max-w-7xl"><p className="text-sm font-semibold uppercase tracking-wider text-violet-600">Celebrio admin</p><h1 className="mt-2 text-3xl font-bold">Vendor directory</h1><p className="mt-2 text-slate-500">Give clients a curated set of venue, catering, décor, photo and entertainment choices.</p><div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{vendors.map((vendor) => <article key={vendor.id} className="rounded-2xl border bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><div className="rounded-xl bg-violet-50 p-3 text-violet-700"><Building2 size={20} /></div><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold">{vendor.category}</span></div><h2 className="mt-5 font-bold">{vendor.name}</h2><p className="mt-2 min-h-10 text-sm text-slate-500">{vendor.description || "Professional event partner."}</p><div className="mt-4 space-y-1 text-sm text-slate-600"><p className="flex gap-2"><MapPin size={15} />{vendor.city || "Location on request"}</p><p className="flex gap-2"><Phone size={15} />{vendor.phone || vendor.email || "Contact details pending"}</p></div><p className="mt-4 border-t pt-3 text-xs font-semibold text-violet-700">Assigned to {vendor.event_vendors.length} events</p></article>)}{!vendors.length && <p className="rounded-2xl border bg-white p-12 text-center text-slate-500 sm:col-span-2 xl:col-span-3">No vendors have been added. Add your trusted partners to create a client-ready shortlist.</p>}</div></div>; }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ConsultationCTA() {
   const [showForm, setShowForm] = useState(false);
@@ -16,7 +16,7 @@ export default function ConsultationCTA() {
               </p>
 
               <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
-                Let's plan a wedding worth remembering.
+                Let&apos;s plan a wedding worth remembering.
               </h2>
 
               <p className="mt-5 text-lg leading-8 text-slate-300">
@@ -82,14 +82,38 @@ function EnquiryForm({ onSuccess }: { onSuccess: () => void }) {
     email: "",
     phone: "",
     city: "",
-    eventType: "",
+    eventType: "Wedding",
     eventDate: "",
     guestCount: "",
     budget: "",
   });
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            setIsLoggedIn(true);
+            setFormData((prev) => ({
+              ...prev,
+              name: prev.name || data.user.name || "",
+              email: prev.email || data.user.email || "",
+            }));
+          }
+        }
+      } catch {
+        // Silently ignore if not logged in
+      }
+    }
+    checkAuth();
+  }, []);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -109,10 +133,12 @@ function EnquiryForm({ onSuccess }: { onSuccess: () => void }) {
 
     setLoading(true);
     setMessage("");
+    setIsSuccess(false);
 
     try {
       const response = await fetch("/api/customers", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -121,8 +147,7 @@ function EnquiryForm({ onSuccess }: { onSuccess: () => void }) {
           email: formData.email,
           phone: formData.phone,
           city: formData.city,
-
-          eventType: formData.eventType,
+          eventType: formData.eventType || "Wedding",
           eventDate: formData.eventDate,
           guestCount: formData.guestCount,
           budget: formData.budget,
@@ -133,22 +158,24 @@ function EnquiryForm({ onSuccess }: { onSuccess: () => void }) {
 
       if (!response.ok) {
         throw new Error(
-          data.error || "Failed to submit enquiry"
+          data.error || "Failed to submit enquiry. Please try again."
         );
       }
 
-      console.log("Enquiry created:", data);
-
+      setIsSuccess(true);
       setMessage(
-        "Thank you! Your enquiry has been submitted successfully."
+        "Thank you! Your consultation request has been scheduled. Our team will review your details."
       );
 
       setTimeout(() => {
         onSuccess();
-      }, 1500);
+        if (isLoggedIn) {
+          window.location.href = "/portal";
+        }
+      }, 1800);
     } catch (error) {
       console.error("Enquiry submission error:", error);
-
+      setIsSuccess(false);
       setMessage(
         error instanceof Error
           ? error.message
@@ -347,7 +374,13 @@ function EnquiryForm({ onSuccess }: { onSuccess: () => void }) {
 
       {/* Message */}
       {message && (
-        <div className="sm:col-span-2 rounded-xl bg-slate-100 p-4 text-sm">
+        <div
+          className={`sm:col-span-2 rounded-xl p-4 text-sm font-medium border ${
+            isSuccess
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-rose-50 text-rose-800 border-rose-200"
+          }`}
+        >
           {message}
         </div>
       )}

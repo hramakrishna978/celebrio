@@ -18,6 +18,10 @@ const navigation = [
     href: "/admin/consultations",
   },
   {
+    name: "Chat Inquiries",
+    href: "/admin/inquiries",
+  },
+  {
     name: "Services",
     href: "/admin/services",
   },

@@ -14,6 +14,9 @@ model consultations {
   consultation_date DateTime                         @db.Timestamp(0)
   consultation_type consultations_consultation_type? @default(ONLINE)
   notes             String?                          @db.Text
+  meeting_provider  String?                          @db.VarChar(30)
+  meeting_url       String?                          @db.Text
+  duration_minutes  Int?                             @default(30)
   status            consultations_status?            @default(REQUESTED)
   created_at        DateTime?                        @default(now()) @db.Timestamp(0)
   updated_at        DateTime?                        @default(now()) @db.Timestamp(0)
@@ -58,8 +61,23 @@ model customers {
   users         users?          @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_customer_user")
   events        events[]
   payments      payments[]
+  planning_profile planning_profiles?
+  expenses       expenses[]
+  media_assets   media_assets[]
+  meeting_notes  meeting_notes[]
 
   @@index([user_id])
+}
+
+model event_requirements {
+  id          Int       @id @default(autoincrement())
+  event_id    Int       @unique
+  content     Json
+  status      String?   @default("DRAFT") @db.VarChar(30)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  events events @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_requirements_event")
 }
 
 model event_services {
@@ -113,6 +131,10 @@ model events {
   customers      customers        @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_customer")
   payments       payments[]
   tasks          tasks[]
+  expenses       expenses[]
+  media_assets   media_assets[]
+  meeting_notes  meeting_notes[]
+  requirements   event_requirements?
 
   @@index([customer_id])
 }
@@ -145,6 +167,74 @@ model payments {
 
   customers customers @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_customer")
   events    events    @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_event")
+
+  @@index([customer_id])
+  @@index([event_id])
+}
+
+model planning_profiles {
+  id             Int       @id @default(autoincrement())
+  customer_id    Int       @unique
+  partner_name   String?   @db.VarChar(150)
+  vision         String?   @db.Text
+  ceremony_style String?   @db.VarChar(150)
+  priorities     String?   @db.Text
+  preferred_date DateTime? @db.Date
+  preferred_city String?   @db.VarChar(100)
+  guest_target   Int?
+  budget_target  Decimal?  @db.Decimal(15, 2)
+  created_at     DateTime? @default(now()) @db.Timestamp(0)
+  updated_at     DateTime? @default(now()) @db.Timestamp(0)
+
+  customers customers @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_planning_profile_customer")
+}
+
+model expenses {
+  id               Int       @id @default(autoincrement())
+  event_id         Int?
+  customer_id      Int
+  title            String    @db.VarChar(200)
+  amount           Decimal   @db.Decimal(15, 2)
+  category         String?   @db.VarChar(100)
+  receipt_data_url String?   @db.Text
+  spent_at         DateTime? @db.Date
+  created_at       DateTime? @default(now()) @db.Timestamp(0)
+
+  customers customers @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_expense_customer")
+  events    events?   @relation(fields: [event_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_expense_event")
+
+  @@index([customer_id])
+  @@index([event_id])
+}
+
+model media_assets {
+  id           Int       @id @default(autoincrement())
+  event_id     Int?
+  customer_id  Int
+  name         String    @db.VarChar(255)
+  data_url     String    @db.Text
+  content_type String?   @db.VarChar(100)
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+
+  customers customers @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_media_asset_customer")
+  events    events?   @relation(fields: [event_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_media_asset_event")
+
+  @@index([customer_id])
+  @@index([event_id])
+}
+
+model meeting_notes {
+  id          Int       @id @default(autoincrement())
+  event_id    Int?
+  customer_id Int
+  title       String    @db.VarChar(200)
+  provider    String?   @db.VarChar(50)
+  meeting_at  DateTime? @db.Timestamp(0)
+  notes       String    @db.Text
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  customers customers @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_meeting_note_customer")
+  events    events?   @relation(fields: [event_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_meeting_note_event")
 
   @@index([customer_id])
   @@index([event_id])
@@ -274,4 +364,22 @@ enum events_status {
   CONFIRMED
   COMPLETED
   CANCELLED
+}
+
+model chat_inquiries {
+  id          Int       @id @default(autoincrement())
+  session_id  String    @db.VarChar(100)
+  customer_id Int?
+  user_name   String?   @db.VarChar(150)
+  user_email  String?   @db.VarChar(150)
+  user_phone  String?   @db.VarChar(50)
+  role        String    @default("user") @db.VarChar(20)
+  message     String    @db.Text
+  topic       String?   @db.VarChar(100)
+  metadata    Json?
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([session_id])
+  @@index([customer_id])
+  @@index([created_at])
 }

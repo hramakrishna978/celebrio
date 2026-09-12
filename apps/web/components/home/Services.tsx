@@ -26,16 +26,18 @@ export default function Services() {
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map(([title, description], index) => (
-            <article key={title} className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-100">
+            <Link href={title === "Reports & Progress" ? "/portal" : "#consultation"} key={title} className="group rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-100 transition hover:-translate-y-1 hover:ring-violet-300">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 font-bold text-violet-700">
                 {String(index + 1).padStart(2, "0")}
               </div>
               <h3 className="mt-5 text-xl font-bold text-slate-900">{title}</h3>
               <p className="mt-3 leading-7 text-slate-600">{description}</p>
-            </article>
+              <p className="mt-5 text-sm font-bold text-violet-700">Explore service →</p>
+            </Link>
           ))}
         </div>
       </div>
     </section>
   );
 }
+import Link from "next/link";

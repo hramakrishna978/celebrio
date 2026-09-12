@@ -33,9 +33,9 @@ export default function Footer() {
           <h3 className="font-bold text-slate-900">Planning</h3>
           <div className="mt-4 flex flex-col gap-3 text-sm text-slate-600">
             <a href="#consultation" className="hover:text-violet-700">Free Consultation</a>
-            <span>Wedding Planning</span>
-            <span>Vendor Coordination</span>
-            <span>Client Portal</span>
+            <a href="#services" className="hover:text-violet-700">Wedding Planning</a>
+            <a href="#services" className="hover:text-violet-700">Vendor Coordination</a>
+            <Link href="/portal" className="font-semibold text-violet-700 hover:text-violet-900">Client Portal</Link>
           </div>
         </div>
       </div>
@@ -49,3 +49,4 @@ export default function Footer() {
     </footer>
   );
 }
+import Link from "next/link";

@@ -1,51 +1,9 @@
-export default function ReportsPage() {
-  return (
-    <div>
-      <p className="text-sm font-medium text-violet-600">
-        CELEBRIO ADMIN
-      </p>
-
-      <h1 className="mt-2 text-3xl font-bold text-slate-950">
-        Reports
-      </h1>
-
-      <p className="mt-2 text-slate-500">
-        Analyse customers, events, payments, vendors and business performance.
-      </p>
-
-      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h2 className="font-semibold">
-            Customer Report
-          </h2>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Customer enquiries and conversions.
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h2 className="font-semibold">
-            Event Report
-          </h2>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Events and wedding planning activity.
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h2 className="font-semibold">
-            Payment Report
-          </h2>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Revenue and payment status.
-          </p>
-        </div>
-
-      </div>
-    </div>
-  );
+import Link from "next/link";
+import { BarChart3, CalendarDays, CheckCircle2, Users } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+export default async function ReportsPage() {
+  const [events, customers, payments, tasks] = await Promise.all([prisma.events.groupBy({ by: ["status"], _count: { _all: true } }), prisma.customers.count(), prisma.payments.aggregate({ _sum: { amount: true }, where: { status: "SUCCESS" } }), prisma.tasks.groupBy({ by: ["status"], _count: { _all: true } })]);
+  const max = Math.max(1, ...events.map((item) => item._count._all)); const taskTotal = tasks.reduce((sum, item) => sum + item._count._all, 0); const done = tasks.find((item) => item.status === "COMPLETED")?._count._all || 0;
+  return <div className="mx-auto max-w-6xl space-y-7"><div><p className="text-sm font-semibold uppercase tracking-wider text-violet-600">Celebrio admin</p><h1 className="mt-2 text-3xl font-bold">Live reporting</h1><p className="mt-2 text-slate-500">Operational reporting based on the same data clients and coordinators use.</p></div><div className="grid gap-4 md:grid-cols-3"><Card icon={Users} label="Customer base" value={customers} detail="Enquiries and account holders" /><Card icon={CalendarDays} label="Event pipeline" value={events.reduce((sum, item) => sum + item._count._all, 0)} detail="Across all lifecycle statuses" /><Card icon={CheckCircle2} label="Task completion" value={`${done}/${taskTotal}`} detail="Completed planning work" /></div><section className="rounded-2xl border bg-white p-6"><div className="flex items-center justify-between"><div><h2 className="text-lg font-bold">Events by status</h2><p className="text-sm text-slate-500">Pipeline distribution</p></div><BarChart3 className="text-violet-600" /></div><div className="mt-6 space-y-4">{events.map((item) => <div key={item.status}><div className="mb-1 flex justify-between text-sm"><span className="font-medium">{item.status}</span><span className="text-slate-500">{item._count._all} events</span></div><div className="h-3 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-violet-600" style={{ width: `${(item._count._all / max) * 100}%` }} /></div></div>)}</div></section><section className="rounded-2xl border bg-white p-6"><h2 className="text-lg font-bold">Financial snapshot</h2><p className="mt-1 text-sm text-slate-500">Successful payments recorded in Celebrio.</p><p className="mt-5 text-4xl font-bold">₹{Number(payments._sum.amount || 0).toLocaleString("en-IN")}</p><Link href="/admin/payments" className="mt-4 inline-block text-sm font-bold text-violet-700">Review payments →</Link></section></div>;
 }
+function Card({ icon: Icon, label, value, detail }: { icon: typeof Users; label: string; value: string | number; detail: string }) { return <div className="rounded-2xl border bg-white p-6"><Icon className="text-violet-600" /><p className="mt-4 text-sm text-slate-500">{label}</p><p className="mt-1 text-3xl font-bold">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div>; }

@@ -16,10 +16,14 @@ const adapter = new PrismaPg({
 });
 
 export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter,
-  });
+  globalForPrisma.prisma &&
+  Boolean((globalForPrisma.prisma as any).event_requirements) &&
+  Boolean((globalForPrisma.prisma as any).planning_profiles) &&
+  Boolean((globalForPrisma.prisma as any).chat_inquiries)
+    ? globalForPrisma.prisma
+    : new PrismaClient({
+        adapter,
+      });
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

@@ -181,11 +181,11 @@ export default function Navbar() {
                     </Link>
                   ) : (
                     <Link
-                      href="/"
+                      href="/portal"
                       onClick={() => setProfileOpen(false)}
                       className="mt-2 block rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-violet-50 hover:text-violet-700"
                     >
-                      My Celebrio
+                      My Celebrio (Portal)
                     </Link>
                   )}
 
@@ -259,13 +259,21 @@ export default function Navbar() {
                   </p>
                 </div>
 
-                {user.role === "ADMIN" && (
+                {user.role === "ADMIN" ? (
                   <Link
                     href="/admin"
                     onClick={() => setOpen(false)}
                     className="mt-3 rounded-xl border border-violet-200 px-5 py-3 text-center text-sm font-semibold text-violet-700"
                   >
                     Admin Dashboard
+                  </Link>
+                ) : (
+                  <Link
+                    href="/portal"
+                    onClick={() => setOpen(false)}
+                    className="mt-3 rounded-xl border border-violet-200 px-5 py-3 text-center text-sm font-semibold text-violet-700"
+                  >
+                    My Celebrio Portal
                   </Link>
                 )}
 
